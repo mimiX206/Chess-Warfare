@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #020617;
+    color: #f8fafc;
+  }
+
+  h1, h2, h3, h4, .font-heading {
+    font-family: 'Chakra Petch', 'Plus Jakarta Sans', sans-serif;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Custom Tactical Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+@keyframes shake-threat {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  15% { transform: translate(-4px, -1px) rotate(-2deg); }
+  30% { transform: translate(4px, 1px) rotate(2deg); }
+  45% { transform: translate(-3px, 1px) rotate(-1.5deg); }
+  60% { transform: translate(3px, -1px) rotate(1.5deg); }
+  75% { transform: translate(-2px, 0) rotate(-1deg); }
+  90% { transform: translate(2px, 0) rotate(1deg); }
+}
+
+.animate-president-shake {
+  animation: shake-threat 0.45s ease-in-out infinite;
+}
+

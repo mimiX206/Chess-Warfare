@@ -1,0 +1,6 @@
+{
+  "name": "หมากรุก Warfare (Warfare Chess Engine)",
+  "description": "เอนจินเกมหมากรุก Warfare 8x8 พร้อมระบบประธานาธิบดีอมตะ คูลดาวน์เครื่องบิน Jet การโปรโมทยูนิตพิเศษ และ Text-Based Grid",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
