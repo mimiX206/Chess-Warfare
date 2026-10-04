@@ -1,7 +1,8 @@
 import React from 'react';
 import { GameStatus, Piece } from '../types/chess';
 import { Shield, Plane, AlertTriangle, Crosshair } from 'lucide-react';
-import { posToCoord, getPieceNameTH } from '../engine/warfareRules';
+import { posToCoord } from '../engine/warfareRules';
+import { useLanguage } from '../i18n';
 
 interface MinimalStatusProps {
   gameStatus: GameStatus;
@@ -14,6 +15,7 @@ export const MinimalStatus: React.FC<MinimalStatusProps> = ({
   capturedWhite,
   capturedBlack,
 }) => {
+  const { t, getPiece, getFactionName } = useLanguage();
   const { turn, turnNumber, whiteVIP, blackVIP, whiteJets, blackJets, isCheck, isCheckmate, winner } = gameStatus;
 
   return (
@@ -29,9 +31,11 @@ export const MinimalStatus: React.FC<MinimalStatusProps> = ({
                 : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
             }`}
           />
-          <span className="text-xs font-mono text-slate-400">ตา #{turnNumber}</span>
+          <span className="text-xs font-mono text-slate-400">
+            {t('turnRound')} #{turnNumber}
+          </span>
           <span className="text-xs sm:text-sm font-bold tracking-wide text-slate-100">
-            {turn === 'white' ? 'ฝ่ายน้ำเงิน (Allies)' : 'ฝ่ายแดง (Opponents)'}
+            {getFactionName(turn)}
           </span>
         </div>
 
@@ -40,26 +44,28 @@ export const MinimalStatus: React.FC<MinimalStatusProps> = ({
           {isCheckmate ? (
             <span className="flex items-center gap-1 px-2.5 py-0.5 bg-rose-950 text-rose-300 border border-rose-600 rounded-lg text-xs font-bold font-mono">
               <AlertTriangle className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
-              <span>CHECKMATE ({winner === 'white' ? 'น้ำเงินชนะ' : 'แดงชนะ'})</span>
+              <span>
+                {t('reportCheckmate')} ({winner === 'white' ? t('winBlue') : t('winRed')})
+              </span>
             </span>
           ) : gameStatus.isStalemate ? (
             <span className="flex items-center gap-1 px-2.5 py-0.5 bg-amber-950 text-amber-300 border border-amber-600 rounded-lg text-xs font-bold font-mono">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-              <span>ประธานาธิบดีปะปนกับฝูงชน (เสมอ)</span>
+              <span>{t('stalemateTitle')}</span>
             </span>
           ) : gameStatus.isInsufficientMaterial ? (
             <span className="flex items-center gap-1 px-2.5 py-0.5 bg-slate-800 text-amber-300 border border-amber-500/60 rounded-lg text-xs font-bold font-mono">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-              <span>กองกำลังไม่พอ (เสมอ)</span>
+              <span>{t('insufficientTitle')}</span>
             </span>
           ) : isCheck ? (
             <span className="flex items-center gap-1 px-2.5 py-0.5 bg-amber-950 text-amber-300 border border-amber-500 rounded-lg text-xs font-bold font-mono animate-pulse">
               <Crosshair className="w-3.5 h-3.5 text-amber-400" />
-              <span>ถูกรุก (CHECK)</span>
+              <span>{t('checkAlert')}</span>
             </span>
           ) : (
             <span className="text-[11px] font-mono text-slate-400">
-              สถานะ: กำลังรบ
+              {t('invincibleGuard')}
             </span>
           )}
         </div>
@@ -71,16 +77,18 @@ export const MinimalStatus: React.FC<MinimalStatusProps> = ({
         <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900/60 rounded-lg border border-cyan-900/40 text-slate-300">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-            <span className="font-semibold text-cyan-200">น้ำเงิน</span>
+            <span className="font-semibold text-cyan-200">
+              {getFactionName('white').split(' ')[0]}
+            </span>
             {whiteVIP.isPresidentInvincible ? (
-              <span className="text-[10px] text-emerald-400 flex items-center gap-0.5" title="Bodyguard หรือ First Lady ยังมีชีวิต">
+              <span className="text-[10px] text-emerald-400 flex items-center gap-0.5" title={t('invincibleGuard')}>
                 <Shield className="w-3 h-3 text-emerald-400 fill-current" />
-                อมตะ
+                <span>{t('invincibleGuard')}</span>
               </span>
             ) : (
-              <span className="text-[10px] text-rose-400 flex items-center gap-0.5">
+              <span className="text-[10px] text-rose-400 flex items-center gap-0.5" title={t('vulnerableKing')}>
                 <AlertTriangle className="w-3 h-3" />
-                เกราะแตก
+                <span>{t('vulnerableKing')}</span>
               </span>
             )}
           </div>
@@ -92,7 +100,9 @@ export const MinimalStatus: React.FC<MinimalStatusProps> = ({
                 className={`flex items-center gap-0.5 ${
                   j.cooldown === 0 ? 'text-emerald-400' : 'text-slate-500'
                 }`}
-                title={`Jet #${i + 1} (${posToCoord(j.pos)}): ${j.cooldown === 0 ? 'พร้อม' : `รอ ${j.cooldown} เทิร์นบนกระดาน (นับรวมที่ศัตรูเดิน)`}`}
+                title={`Jet #${i + 1} (${posToCoord(j.pos)}): ${
+                  j.cooldown === 0 ? t('jetsReady') : t('jetCooldownTooltip', { turns: j.cooldown })
+                }`}
               >
                 <Plane className="w-2.5 h-2.5" />
                 {j.cooldown === 0 ? 'OK' : `${j.cooldown}T`}
@@ -105,16 +115,18 @@ export const MinimalStatus: React.FC<MinimalStatusProps> = ({
         <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900/60 rounded-lg border border-rose-900/40 text-slate-300">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-            <span className="font-semibold text-rose-200">แดง</span>
+            <span className="font-semibold text-rose-200">
+              {getFactionName('black').split(' ')[0]}
+            </span>
             {blackVIP.isPresidentInvincible ? (
-              <span className="text-[10px] text-emerald-400 flex items-center gap-0.5" title="Bodyguard หรือ First Lady ยังมีชีวิต">
+              <span className="text-[10px] text-emerald-400 flex items-center gap-0.5" title={t('invincibleGuard')}>
                 <Shield className="w-3 h-3 text-emerald-400 fill-current" />
-                อมตะ
+                <span>{t('invincibleGuard')}</span>
               </span>
             ) : (
-              <span className="text-[10px] text-rose-400 flex items-center gap-0.5">
+              <span className="text-[10px] text-rose-400 flex items-center gap-0.5" title={t('vulnerableKing')}>
                 <AlertTriangle className="w-3 h-3" />
-                เกราะแตก
+                <span>{t('vulnerableKing')}</span>
               </span>
             )}
           </div>
@@ -126,7 +138,9 @@ export const MinimalStatus: React.FC<MinimalStatusProps> = ({
                 className={`flex items-center gap-0.5 ${
                   j.cooldown === 0 ? 'text-emerald-400' : 'text-slate-500'
                 }`}
-                title={`Jet #${i + 1} (${posToCoord(j.pos)}): ${j.cooldown === 0 ? 'พร้อม' : `รอ ${j.cooldown} เทิร์นบนกระดาน (นับรวมที่ศัตรูเดิน)`}`}
+                title={`Jet #${i + 1} (${posToCoord(j.pos)}): ${
+                  j.cooldown === 0 ? t('jetsReady') : t('jetCooldownTooltip', { turns: j.cooldown })
+                }`}
               >
                 <Plane className="w-2.5 h-2.5" />
                 {j.cooldown === 0 ? 'OK' : `${j.cooldown}T`}
@@ -136,22 +150,22 @@ export const MinimalStatus: React.FC<MinimalStatusProps> = ({
         </div>
       </div>
 
-      {/* Captured cemetery row (clean & quiet) */}
+      {/* Captured cemetery row */}
       {(capturedBlack.length > 0 || capturedWhite.length > 0) && (
         <div className="flex justify-between items-center text-[11px] font-mono px-2 text-slate-400">
           <div className="flex items-center gap-1">
-            <span className="text-slate-500">ยึดได้:</span>
+            <span className="text-slate-500">{t('capturedPieces')}:</span>
             {capturedBlack.map((p, i) => (
-              <span key={i} className="text-cyan-300 text-xs" title={getPieceNameTH(p.type).name}>
-                {getPieceNameTH(p.type).symbol}
+              <span key={i} className="text-cyan-300 text-xs" title={getPiece(p.type).name}>
+                {getPiece(p.type).symbol}
               </span>
             ))}
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-slate-500">สูญเสีย:</span>
+            <span className="text-slate-500">{t('capturedPieces')}:</span>
             {capturedWhite.map((p, i) => (
-              <span key={i} className="text-rose-400 text-xs" title={getPieceNameTH(p.type).name}>
-                {getPieceNameTH(p.type).symbol}
+              <span key={i} className="text-rose-400 text-xs" title={getPiece(p.type).name}>
+                {getPiece(p.type).symbol}
               </span>
             ))}
           </div>

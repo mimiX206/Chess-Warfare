@@ -10,6 +10,8 @@ import {
   JetStatus,
   GameStatus,
 } from '../types/chess';
+import { PIECE_TRANSLATIONS } from '../i18n/translations';
+import { Language } from '../i18n/types';
 
 export type Board = (Piece | null)[][];
 
@@ -41,29 +43,20 @@ export function isSamePos(p1: Position | null, p2: Position | null): boolean {
   return p1.row === p2.row && p1.col === p2.col;
 }
 
+export function getPieceName(
+  type: PieceType,
+  lang: Language = 'th'
+): { name: string; title: string; symbol: string } {
+  const trans = PIECE_TRANSLATIONS[lang]?.[type] || PIECE_TRANSLATIONS['th'][type];
+  return {
+    name: trans.name,
+    title: trans.title,
+    symbol: trans.symbol,
+  };
+}
+
 export function getPieceNameTH(type: PieceType): { name: string; title: string; symbol: string } {
-  switch (type) {
-    case 'president':
-      return { name: 'ประธานาธิบดี', title: 'President', symbol: '♚' };
-    case 'first_lady':
-      return { name: 'สุภาพสตรีหมายเลขหนึ่ง', title: 'First Lady', symbol: '♛' };
-    case 'bodyguard':
-      return { name: 'บอดี้การ์ด', title: 'Bodyguard', symbol: '♝' };
-    case 'jet':
-      return { name: 'เครื่องบินขับไล่', title: 'Jet', symbol: '♞' };
-    case 'tank':
-      return { name: 'รถถังประจัญบาน', title: 'Tank', symbol: '♜' };
-    case 'citizen':
-      return { name: 'พลเมือง', title: 'Citizen', symbol: '♟' };
-    case 'brave_soldier':
-      return { name: 'ทหารผู้กล้า', title: 'Brave Soldier', symbol: '⚔️' };
-    case 'trainee_pilot':
-      return { name: 'นักบินฝึกหัด', title: 'Trainee Pilot', symbol: '🛩️' };
-    case 'police':
-      return { name: 'ตำรวจสันติบาล', title: 'Police', symbol: '👮' };
-    case 'armored_car':
-      return { name: 'รถหุ้มเกราะ', title: 'Armored Car', symbol: '🛡️' };
-  }
+  return getPieceName(type, 'th');
 }
 
 /**
@@ -608,7 +601,8 @@ export function applyMove(
   board: Board,
   from: Position,
   to: Position,
-  promotionType?: PieceType
+  promotionType?: PieceType,
+  lang: Language = 'th'
 ): { newBoard: Board; moveDetails: Move; requiresPromotion: boolean } {
   const newBoard = cloneBoard(board);
   const piece = { ...newBoard[from.row][from.col]! };
@@ -643,9 +637,26 @@ export function applyMove(
     const notation = isAlreadyAdjacent
       ? `Pol 🔒 ${posToCoord(to)}`
       : `Pol ${posToCoord(adjacentPos)} 🔒 ${posToCoord(to)}`;
-    const description = isAlreadyAdjacent
-      ? `ตำรวจประชิดล็อก ${getPieceNameTH(destPiece.type).name} ที่ ${posToCoord(to)} ให้หยุดนิ่ง 1 ตา`
-      : `ตำรวจพุ่งประชิดที่ ${posToCoord(adjacentPos)} และล็อก ${getPieceNameTH(destPiece.type).name} ที่ ${posToCoord(to)} ให้หยุดนิ่ง 1 ตา`;
+
+    const targetName = getPieceName(destPiece.type, lang).name;
+    let description = '';
+    if (lang === 'en') {
+      description = isAlreadyAdjacent
+        ? `Special Police locked ${targetName} at ${posToCoord(to)} for 1 turn`
+        : `Special Police dashed to ${posToCoord(adjacentPos)} and locked ${targetName} at ${posToCoord(to)} for 1 turn`;
+    } else if (lang === 'ja') {
+      description = isAlreadyAdjacent
+        ? `警察が ${posToCoord(to)} の ${targetName} を1ターン拘束`
+        : `警察が ${posToCoord(adjacentPos)} に急行接近し、${posToCoord(to)} の ${targetName} を1ターン拘束`;
+    } else if (lang === 'zh') {
+      description = isAlreadyAdjacent
+        ? `特警贴身锁定 ${posToCoord(to)} 处的 ${targetName} 1回合`
+        : `特警突进至 ${posToCoord(adjacentPos)} 并锁定 ${posToCoord(to)} 处的 ${targetName} 1回合`;
+    } else {
+      description = isAlreadyAdjacent
+        ? `ตำรวจประชิดล็อก ${targetName} ที่ ${posToCoord(to)} ให้หยุดนิ่ง 1 ตา`
+        : `ตำรวจพุ่งประชิดที่ ${posToCoord(adjacentPos)} และล็อก ${targetName} ที่ ${posToCoord(to)} ให้หยุดนิ่ง 1 ตา`;
+    }
 
     const moveDetails: Move = {
       from,
@@ -663,7 +674,17 @@ export function applyMove(
   // Check promotion
   const needsPromotion = isPawnPromotion(piece, to);
   if (needsPromotion && !promotionType) {
-    // Return flag to prompt user
+    let promoDesc = '';
+    if (lang === 'en') {
+      promoDesc = 'Citizen reached enemy baseline, awaiting promotion';
+    } else if (lang === 'ja') {
+      promoDesc = '市民が敵陣最奥に突入、昇格を選択中';
+    } else if (lang === 'zh') {
+      promoDesc = '平民抵达敌阵底线，等待兵种晋升';
+    } else {
+      promoDesc = 'พลเมืองเข้าถึงฐานฝั่งตรงข้าม รอดำเนินการโปรโมท';
+    }
+
     return {
       newBoard,
       moveDetails: {
@@ -673,7 +694,7 @@ export function applyMove(
         captured: destPiece,
         type: 'promotion',
         notation: `${posToCoord(from)}-${posToCoord(to)}`,
-        description: `พลเมืองเข้าถึงฐานฝั่งตรงข้าม รอดำเนินการโปรโมท`,
+        description: promoDesc,
       },
       requiresPromotion: true,
     };
@@ -685,9 +706,9 @@ export function applyMove(
     piece.cooldown = 0; // Trainee pilot or other promoted unit
   }
 
-  // Jet cooldown rule: "เดินได้ 1 ครั้ง เว้น 2 ตา (หลังจากเดิน 1 ครั้ง จะต้องรออีก 2 ตาของฝั่งตัวเองถึงจะเดินได้อีกครั้ง)"
+  // Jet cooldown rule
   if (piece.type === 'jet') {
-    piece.cooldown = 2; // Set cooldown to 2 turns of its own faction
+    piece.cooldown = 2; // Set cooldown to 2 turns
   }
 
   piece.hasMoved = true;
@@ -698,9 +719,28 @@ export function applyMove(
     promotionType ? `=${promotionType.toUpperCase()}` : ''
   }`;
 
-  const description = `${getPieceNameTH(piece.type).name} จาก ${posToCoord(from)} ไป ${posToCoord(to)}${
-    destPiece ? ` (กำจัด ${getPieceNameTH(destPiece.type).name})` : ''
-  }${promotionType ? ` [โปรโมทเป็น ${getPieceNameTH(promotionType).name}]` : ''}`;
+  const pieceName = getPieceName(piece.type, lang).name;
+  const capturedName = destPiece ? getPieceName(destPiece.type, lang).name : '';
+  const promoName = promotionType ? getPieceName(promotionType, lang).name : '';
+
+  let description = '';
+  if (lang === 'en') {
+    description = `${pieceName} from ${posToCoord(from)} to ${posToCoord(to)}${
+      destPiece ? ` (Captured ${capturedName})` : ''
+    }${promotionType ? ` [Promoted to ${promoName}]` : ''}`;
+  } else if (lang === 'ja') {
+    description = `${pieceName} が ${posToCoord(from)} から ${posToCoord(to)} へ移動${
+      destPiece ? `（${capturedName} を撃破）` : ''
+    }${promotionType ? ` [${promoName} に昇格]` : ''}`;
+  } else if (lang === 'zh') {
+    description = `${pieceName} 从 ${posToCoord(from)} 移动至 ${posToCoord(to)}${
+      destPiece ? `（击杀 ${capturedName}）` : ''
+    }${promotionType ? ` [晋升为 ${promoName}]` : ''}`;
+  } else {
+    description = `${pieceName} จาก ${posToCoord(from)} ไป ${posToCoord(to)}${
+      destPiece ? ` (กำจัด ${capturedName})` : ''
+    }${promotionType ? ` [โปรโมทเป็น ${promoName}]` : ''}`;
+  }
 
   const moveDetails: Move = {
     from,

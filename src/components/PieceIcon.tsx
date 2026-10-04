@@ -1,6 +1,7 @@
 import React from 'react';
 import { Piece } from '../types/chess';
 import { Shield, Lock } from 'lucide-react';
+import { useLanguage } from '../i18n';
 
 interface PieceIconProps {
   piece: Piece;
@@ -9,6 +10,7 @@ interface PieceIconProps {
 }
 
 export const PieceIcon: React.FC<PieceIconProps> = ({ piece, isInvinciblePresident, isChecked }) => {
+  const { t } = useLanguage();
   const isWhite = piece.faction === 'white';
 
   // Faction palettes
@@ -295,7 +297,7 @@ export const PieceIcon: React.FC<PieceIconProps> = ({ piece, isInvinciblePreside
       {isInvinciblePresident && (
         <span
           className="absolute -top-1 -right-1 text-[9px] bg-amber-500 text-slate-950 font-bold px-1 py-0.2 rounded-full flex items-center gap-0.5 shadow-md border border-amber-300"
-          title="เกราะคุ้มกันอมตะ (ห้ามกิน/ไม่ต้องหนีรุก)"
+          title={t('invincibleGuard')}
         >
           <Shield className="w-2.5 h-2.5 fill-current" />
         </span>
@@ -306,14 +308,14 @@ export const PieceIcon: React.FC<PieceIconProps> = ({ piece, isInvinciblePreside
         piece.cooldown > 0 ? (
           <span
             className="absolute -bottom-1 -right-1 text-[9px] bg-rose-600 text-white font-mono font-bold px-1 py-0.2 rounded shadow-sm border border-rose-400"
-            title={`คูลดาวน์: รออีก ${piece.cooldown} เทิร์นบนกระดาน (นับรวมที่ศัตรูเดิน)`}
+            title={t('jetCooldownTooltip', { turns: piece.cooldown })}
           >
             {piece.cooldown}T
           </span>
         ) : (
           <span
             className="absolute -bottom-1 -right-1 text-[8px] bg-emerald-600 text-emerald-100 font-mono font-bold px-0.8 py-0.2 rounded shadow-sm"
-            title="พร้อมบิน"
+            title={t('jetReadyTooltip')}
           >
             ✓
           </span>
@@ -324,7 +326,7 @@ export const PieceIcon: React.FC<PieceIconProps> = ({ piece, isInvinciblePreside
       {piece.lockedTurns > 0 && (
         <div
           className="absolute inset-0 bg-slate-950/75 backdrop-blur-[1px] rounded-lg flex items-center justify-center border-2 border-amber-400 animate-pulse z-20"
-          title="ถูกตำรวจล็อก! ไม่สามารถเดินได้ 1 ตา"
+          title={t('lockedTooltip')}
         >
           <Lock className="w-5 h-5 text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.9)]" />
         </div>
@@ -334,10 +336,10 @@ export const PieceIcon: React.FC<PieceIconProps> = ({ piece, isInvinciblePreside
       {piece.lockImmunityTurns !== undefined && piece.lockImmunityTurns > 0 && (
         <span
           className="absolute -top-1 -right-1 text-[8px] bg-cyan-950 text-cyan-300 font-mono font-bold px-1 rounded shadow-sm border border-cyan-500/70 z-10 flex items-center gap-0.5"
-          title="มีภูมิคุ้มกัน: ไม่สามารถถูกตำรวจล็อกซ้ำในตานี้ได้"
+          title={t('immuneTooltip')}
         >
           <span>🛡️</span>
-          <span className="hidden sm:inline">IMMUNE</span>
+          <span className="hidden sm:inline">{t('immuneBadge')}</span>
         </span>
       )}
     </div>

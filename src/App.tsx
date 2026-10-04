@@ -10,11 +10,11 @@ import {
   endTurnMaintenance,
   evaluateGameStatus,
   coordToPos,
-  getPieceNameTH,
+  getPieceName,
   Board,
 } from './engine/warfareRules';
 import { generateTextBasedGrid } from './engine/textGrid';
-import { getBestAIMove, AIDifficulty, DIFFICULTY_LABELS } from './engine/ai';
+import { getBestAIMove, AIDifficulty } from './engine/ai';
 import { sounds } from './utils/audio';
 import {
   Faction,
@@ -24,6 +24,7 @@ import {
   PieceType,
   Move,
 } from './types/chess';
+import { useLanguage } from './i18n';
 import { Header } from './components/Header';
 import { TacticalBoard } from './components/TacticalBoard';
 import { MinimalStatus } from './components/MinimalStatus';
@@ -33,9 +34,11 @@ import { RulesModal } from './components/RulesModal';
 import { CoinTossModal } from './components/CoinTossModal';
 import { PieceSummonModal } from './components/PieceSummonModal';
 import { SandboxControls } from './components/SandboxControls';
-import { Trophy, RotateCcw, SlidersHorizontal, Coins, Users, ShieldAlert } from 'lucide-react';
+import { Trophy, RotateCcw, SlidersHorizontal, Users, ShieldAlert } from 'lucide-react';
 
 export default function App() {
+  const { lang, t, getPiece, getFactionName, getDifficulty } = useLanguage();
+
   const [board, setBoard] = useState<Board>(() => createInitialBoard());
   const [turn, setTurn] = useState<Faction>('white');
   const [turnNumber, setTurnNumber] = useState<number>(1);
@@ -95,8 +98,8 @@ export default function App() {
 
   // Generate text-based grid string
   const textBasedGrid = useMemo(() => {
-    return generateTextBasedGrid(board, selectedPos, legalTargets, gameStatus);
-  }, [board, selectedPos, legalTargets, gameStatus]);
+    return generateTextBasedGrid(board, selectedPos, legalTargets, gameStatus, lang);
+  }, [board, selectedPos, legalTargets, gameStatus, lang]);
 
   // Execute a move
   const executeMove = useCallback(
@@ -113,7 +116,8 @@ export default function App() {
         board,
         from,
         to,
-        promotionType
+        promotionType,
+        lang
       );
 
       if (requiresPromotion) {
@@ -163,7 +167,7 @@ export default function App() {
         sounds.playCheck();
       }
     },
-    [board, turn, turnNumber]
+    [board, turn, turnNumber, lang]
   );
 
   // Handle Square Selection / Click
@@ -305,52 +309,60 @@ export default function App() {
 
     if (cleanCmd === 'status') {
       const currentVIP = turn === 'white' ? gameStatus.whiteVIP : gameStatus.blackVIP;
-      return `สถานะเกม:
-- ตาเดินที่: #${turnNumber} (${turn === 'white' ? 'ฝ่ายน้ำเงิน' : 'ฝ่ายแดง'})
-- ประธานาธิบดี: ${currentVIP.isPresidentInvincible ? '🛡️ อมตะ (Invincible)' : '⚠️ เปราะบาง (Vulnerable)'}
-- First Lady: ${currentVIP.firstLadyAlive ? 'มีชีวิต' : 'ถูกกำจัด'}
-- Bodyguards เหลือ: ${currentVIP.bodyguardsRemaining} นาย
-- Check: ${gameStatus.isCheck ? 'กำลังถูกรุก' : 'ปลอดภัย'}`;
+      const fName = getFactionName(turn);
+      const invStr = currentVIP.isPresidentInvincible ? `🛡️ ${t('invincibleGuard')}` : `⚠️ ${t('vulnerableKing')}`;
+      const flStr = currentVIP.firstLadyAlive ? t('alive') : t('eliminated');
+      const chkStr = gameStatus.isCheck ? t('checkAlert') : 'OK';
+
+      return `${t('drawerTitle')}:
+- ${t('turnLabel')}: #${turnNumber} (${fName})
+- ${t('invincibleGuard')}: ${invStr}
+- ${t('firstLadyStatus')}: ${flStr}
+- ${t('bodyguardsRemaining')}: ${currentVIP.bodyguardsRemaining}
+- Check: ${chkStr}`;
     }
 
     if (cleanCmd === 'reset') {
       handleResetGame();
-      return 'ระบบทำการรีเซ็ตกระดานเรียบร้อย';
+      return lang === 'en' ? 'Game reset successfully' : lang === 'ja' ? 'リセットが完了しました' : lang === 'zh' ? '棋局已成功重置' : 'ระบบทำการรีเซ็ตกระดานเรียบร้อย';
     }
 
     // Select command: "select e2" or "view e2"
     if (cleanCmd.startsWith('select ') || cleanCmd.startsWith('view ')) {
       const coord = cleanCmd.split(' ')[1];
       const pos = coordToPos(coord);
-      if (!pos) return `❌ พิกัด "${coord}" ไม่ถูกต้อง`;
+      if (!pos) return `❌ ${lang === 'en' ? 'Invalid coordinate' : 'พิกัดไม่ถูกต้อง'} "${coord}"`;
       const p = board[pos.row][pos.col];
-      if (!p) return `❌ ไม่มีหมากที่พิกัด ${coord}`;
-      if (p.faction !== turn) return `❌ ไม่สามารถเลือกหมากของฝ่ายตรงข้ามได้`;
+      if (!p) return `❌ ${lang === 'en' ? 'No piece at' : 'ไม่มีหมากที่พิกัด'} ${coord}`;
+      if (p.faction !== turn) return `❌ ${lang === 'en' ? 'Cannot select opponent piece' : 'ไม่สามารถเลือกหมากของฝ่ายตรงข้ามได้'}`;
 
-      if (p.lockedTurns > 0) return `❌ หมากนี้ถูกตำรวจล็อกอยู่! ไม่สามารถขยับได้ในตานี้`;
-      if (p.type === 'jet' && p.cooldown > 0) return `❌ เครื่องบิน Jet ที่ ${coord} ยังติดคูลดาวน์อีก ${p.cooldown} เทิร์นบนกระดาน (นับรวมที่ศัตรูเดิน)`;
+      if (p.lockedTurns > 0) return `❌ ${t('lockedTooltip')}`;
+      if (p.type === 'jet' && p.cooldown > 0) {
+        return `❌ ${t('jetCooldownTooltip', { turns: p.cooldown })}`;
+      }
 
       const targets = getLegalMovesForPiece(board, pos, turn);
       setSelectedPos(pos);
       setLegalTargets(targets);
       sounds.playSelect();
-      return `เลือก ${getPieceNameTH(p.type).name} ที่ ${coord} (มีตาเดินที่ถูกต้อง ${targets.length} ช่อง)`;
+      const pName = getPiece(p.type).name;
+      return `${lang === 'en' ? 'Selected' : 'เลือก'} ${pName} @ ${coord} (${targets.length} ${lang === 'en' ? 'legal moves' : 'ตาเดิน'})`;
     }
 
     // Lock command: "lock e5"
     if (cleanCmd.startsWith('lock ')) {
       const coord = cleanCmd.split(' ')[1];
       const targetPos = coordToPos(coord);
-      if (!targetPos) return `❌ พิกัด "${coord}" ไม่ถูกต้อง`;
-      if (!selectedPos) return `❌ กรุณาเลือกตำรวจ (Police) ก่อนทำการล็อกเป้าหมาย`;
+      if (!targetPos) return `❌ ${lang === 'en' ? 'Invalid coordinate' : 'พิกัดไม่ถูกต้อง'} "${coord}"`;
+      if (!selectedPos) return `❌ ${lang === 'en' ? 'Please select Police unit first' : 'กรุณาเลือกตำรวจ (Police) ก่อนทำการล็อกเป้าหมาย'}`;
 
       const target = legalTargets.find(
         (t) => t.pos.row === targetPos.row && t.pos.col === targetPos.col && t.type === 'lock'
       );
-      if (!target) return `❌ ไม่สามารถล็อกเป้าหมายที่ ${coord} ได้ (อยู่นอกระยะหรือไม่มีหมากข้าศึก)`;
+      if (!target) return `❌ ${lang === 'en' ? 'Target cannot be locked' : 'ไม่สามารถล็อกเป้าหมายที่'} ${coord}`;
 
       executeMove(selectedPos, targetPos, target);
-      return `ทำการล็อกเป้าหมายที่ ${coord} เรียบร้อย! หมากดังกล่าวจะขยับไม่ได้ 1 ตา`;
+      return `🔒 ${lang === 'en' ? 'Target locked successfully' : 'ทำการล็อกเป้าหมายเรียบร้อย'} @ ${coord}`;
     }
 
     // Move command: "move e2 e4" or "e2e4" or "e2-e4"
@@ -370,16 +382,16 @@ export default function App() {
       const fromPos = coordToPos(fromCoord);
       const toPos = coordToPos(toCoord);
 
-      if (!fromPos) return `❌ พิกัดต้นทาง "${fromCoord}" ไม่ถูกต้อง`;
-      if (!toPos) return `❌ พิกัดปลายทาง "${toCoord}" ไม่ถูกต้อง`;
+      if (!fromPos) return `❌ ${lang === 'en' ? 'Invalid origin' : 'พิกัดต้นทางไม่ถูกต้อง'} "${fromCoord}"`;
+      if (!toPos) return `❌ ${lang === 'en' ? 'Invalid destination' : 'พิกัดปลายทางไม่ถูกต้อง'} "${toCoord}"`;
 
       const piece = board[fromPos.row][fromPos.col];
-      if (!piece) return `❌ ไม่มีหมากที่ช่อง ${fromCoord}`;
-      if (piece.faction !== turn) return `❌ ช่อง ${fromCoord} ไม่ใช่หมากของฝ่ายคุณ`;
+      if (!piece) return `❌ ${lang === 'en' ? 'No piece at' : 'ไม่มีหมากที่ช่อง'} ${fromCoord}`;
+      if (piece.faction !== turn) return `❌ ${lang === 'en' ? 'Not your piece at' : 'ไม่ใช่หมากของฝ่ายคุณที่'} ${fromCoord}`;
 
-      if (piece.lockedTurns > 0) return `❌ หมากที่ ${fromCoord} ถูกตำรวจล็อกอยู่! ไม่สามารถเดินได้`;
+      if (piece.lockedTurns > 0) return `❌ ${t('lockedTooltip')}`;
       if (piece.type === 'jet' && piece.cooldown > 0) {
-        return `❌ เครื่องบิน Jet ที่ ${fromCoord} ติดคูลดาวน์! ต้องรออีก ${piece.cooldown} เทิร์นบนกระดาน (นับรวมที่ศัตรูเดิน)`;
+        return `❌ ${t('jetCooldownTooltip', { turns: piece.cooldown })}`;
       }
 
       const targets = getLegalMovesForPiece(board, fromPos, turn);
@@ -387,16 +399,16 @@ export default function App() {
 
       if (!validTarget) {
         if (piece.type === 'president') {
-          return `❌ ไม่สามารถเดิน President ไปที่ ${toCoord} ได้: แม้อยู่ในสถานะอมตะ ก็ไม่สามารถเดินเข้าไปในช่องที่อยู่ในอำนาจการโจมตีของหมากฝ่ายตรงข้ามได้`;
+          return `❌ ${lang === 'en' ? 'President cannot move into attacked squares even when invincible' : 'ไม่สามารถเดิน President เข้าไปในช่องที่อยู่ในอำนาจโจมตีของข้าศึกได้'}`;
         }
-        return `❌ ตาเดินจาก ${fromCoord} ไป ${toCoord} ผิดกติกาหรือไม่สามารถเดินได้`;
+        return `❌ ${lang === 'en' ? 'Illegal move' : 'ตาเดินผิดกติกา'}: ${fromCoord} -> ${toCoord}`;
       }
 
       executeMove(fromPos, toPos, validTarget);
-      return `เดินสำเร็จ: ${fromCoord} -> ${toCoord}`;
+      return `✓ ${fromCoord} -> ${toCoord}`;
     }
 
-    return `❌ ไม่เข้าใจคำสั่ง "${cmd}" พิมพ์ "help" เพื่อดูรายการคำสั่ง`;
+    return `❌ ${lang === 'en' ? 'Command not recognized. Type "help" for options.' : 'ไม่เข้าใจคำสั่ง พิมพ์ "help" เพื่อดูรายการ'}`;
   };
 
   // Sandbox actions
@@ -431,7 +443,7 @@ export default function App() {
       }
 
       if (whiteKings !== 1 || blackKings !== 1) {
-        setSandboxValidationError('ต้องการ President ฝ่ายน้ำเงิน 1 ตัว และฝ่ายแดง 1 ตัว เพื่อเริ่มการทดสอบ');
+        setSandboxValidationError(t('sandboxValidationError'));
         sounds.playCheck();
         return;
       }
@@ -550,7 +562,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500/30 selection:text-amber-200">
-      {/* Top Header with Advanced Mode Toggle Button & Difficulty */}
+      {/* Top Header with Advanced Mode Toggle Button, Language Selector & Difficulty */}
       <Header
         isMuted={isMuted}
         onToggleMute={handleToggleMute}
@@ -594,10 +606,10 @@ export default function App() {
         {/* Mobile Difficulty Selector (shows on small screens when in AI mode) */}
         {gameMode === 'ai' && (
           <div className="flex sm:hidden items-center justify-center gap-1.5 p-1 bg-slate-900/90 border border-slate-800 rounded-lg text-xs font-mono">
-            <span className="text-[10px] text-slate-400 mr-1">ความยาก:</span>
+            <span className="text-[10px] text-slate-400 mr-1">{t('difficulty')}:</span>
             {(['easy', 'normal', 'expert'] as AIDifficulty[]).map((level) => {
               const isActive = aiDifficulty === level;
-              const meta = DIFFICULTY_LABELS[level];
+              const meta = getDifficulty(level);
               return (
                 <button
                   key={level}
@@ -612,7 +624,7 @@ export default function App() {
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {meta.nameTH}
+                  {meta.name}
                 </button>
               );
             })}
@@ -624,7 +636,10 @@ export default function App() {
           <div className="flex items-center gap-2 px-3 py-1 bg-rose-950/70 border border-rose-800/90 rounded-full text-rose-300 font-mono text-xs animate-pulse shadow-md">
             <span className="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
             <span>
-              บอททหาร [{DIFFICULTY_LABELS[aiDifficulty].nameTH} - {DIFFICULTY_LABELS[aiDifficulty].desc}] กำลังคำนวณยุทธวิธี...
+              {t('aiThinkingNotice', {
+                difficulty: getDifficulty(aiDifficulty).name,
+                desc: getDifficulty(aiDifficulty).desc,
+              })}
             </span>
           </div>
         )}
@@ -649,15 +664,15 @@ export default function App() {
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
                 <span className="text-amber-400 font-bold">[ • ]</span>
-                <span>เดินได้</span>
+                <span>{t('legendMove')}</span>
               </span>
               <span className="flex items-center gap-1">
                 <span className="text-rose-400 font-bold">[*X*]</span>
-                <span>กินได้</span>
+                <span>{t('legendCapture')}</span>
               </span>
               <span className="flex items-center gap-1">
                 <span className="text-cyan-400 font-bold">[🔒X🔒]</span>
-                <span>ตำรวจล็อก</span>
+                <span>{t('legendLock')}</span>
               </span>
             </div>
 
@@ -666,7 +681,7 @@ export default function App() {
               className="text-amber-400/80 hover:text-amber-300 transition-colors flex items-center gap-1 hover:underline"
             >
               <SlidersHorizontal className="w-3 h-3" />
-              <span>บันทึกยุทธการ &gt;</span>
+              <span>{t('combatLogPrompt')}</span>
             </button>
           </div>
         </div>
@@ -725,30 +740,28 @@ export default function App() {
 
               <div className="font-mono text-xs text-amber-400 font-bold tracking-widest uppercase">
                 {gameStatus.isCheckmate
-                  ? 'BATTLE REPORT: CHECKMATE'
+                  ? t('reportCheckmate')
                   : gameStatus.isStalemate
-                  ? 'BATTLE REPORT: STALEMATE'
-                  : 'BATTLE REPORT: INSUFFICIENT FORCES'}
+                  ? t('reportStalemate')
+                  : t('reportInsufficient')}
               </div>
 
               <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
-                {gameStatus.endTitle ||
-                  (gameStatus.isCheckmate
-                    ? gameStatus.winner === 'white'
-                      ? 'ฝ่ายน้ำเงิน ชนะศึก!'
-                      : 'ฝ่ายแดง ชนะศึก!'
-                    : gameStatus.isStalemate
-                    ? 'ประธานาธิบดีปะปนกับฝูงชน (ผลคือเสมอ)'
-                    : 'กองกำลังไม่พอ')}
+                {gameStatus.isCheckmate
+                  ? gameStatus.winner === 'white'
+                    ? t('winBlue')
+                    : t('winRed')
+                  : gameStatus.isStalemate
+                  ? t('stalemateTitle')
+                  : t('insufficientTitle')}
               </h2>
 
               <p className="text-xs text-slate-300 mt-2 font-mono leading-relaxed">
-                {gameStatus.endDescription ||
-                  (gameStatus.isCheckmate
-                    ? 'ประธานาธิบดีของฝ่ายพ่ายแพ้สูญเสียเกราะคุ้มกันและถูกรุกฆาตจนมุม'
-                    : gameStatus.isStalemate
-                    ? 'ฝั่งตรงข้ามถูกปิดทางจนเดินไปไหนไม่ได้แล้ว แต่ไม่ได้อยู่ในระยะโจมตีและไม่เหลือตาเดินให้หมากใดๆ ขยับได้'
-                    : 'ทั้งสองฝ่ายไม่เหลือหมากที่มีกำลังรบเพียงพอที่จะรุกฆาตได้ (ผลคือเสมอ)')}
+                {gameStatus.isCheckmate
+                  ? t('checkmateDesc')
+                  : gameStatus.isStalemate
+                  ? t('stalemateDesc')
+                  : t('insufficientDesc')}
               </p>
 
               <div className="mt-6 flex flex-wrap justify-center gap-2.5">
@@ -762,14 +775,14 @@ export default function App() {
                       }}
                       className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold rounded-xl text-xs transition-colors shadow"
                     >
-                      <span>✏️ กลับไปแก้ไขกระดาน</span>
+                      <span>{t('editSetupBtn')}</span>
                     </button>
                     <button
                       onClick={handleResetTestPlay}
                       className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition-colors shadow-lg"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      <span>ทดสอบใหม่อีกครั้ง</span>
+                      <span>{t('retryTestBtn')}</span>
                     </button>
                   </>
                 ) : (
@@ -778,7 +791,7 @@ export default function App() {
                     className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-sm transition-colors shadow-lg"
                   >
                     <RotateCcw className="w-4 h-4" />
-                    <span>เริ่มศึกใหม่ (Play Again)</span>
+                    <span>{t('playAgainBtn')}</span>
                   </button>
                 )}
               </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Faction } from '../types/chess';
 import { sounds } from '../utils/audio';
 import { Coins, Swords, Shield, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react';
+import { useLanguage } from '../i18n';
 
 export type CoinFace = 'heads' | 'tails';
 
@@ -16,6 +17,7 @@ export const CoinTossModal: React.FC<CoinTossModalProps> = ({
   gameMode = 'pvp',
   onComplete,
 }) => {
+  const { t, getFactionName } = useLanguage();
   const [whiteChoice, setWhiteChoice] = useState<CoinFace>('heads');
   const [isFlipping, setIsFlipping] = useState<boolean>(false);
   const [result, setResult] = useState<CoinFace | null>(null);
@@ -74,17 +76,15 @@ export const CoinTossModal: React.FC<CoinTossModalProps> = ({
             <Coins className="w-4 h-4 text-amber-400" />
           </div>
           <span className="text-xs font-mono font-bold text-amber-400 tracking-widest uppercase">
-            {gameMode === 'pvp' ? '2-PLAYER INITIATIVE TOSS' : 'AI BATTLE INITIATIVE TOSS'}
+            {gameMode === 'pvp' ? '2-PLAYER INITIATIVE' : 'AI BATTLE INITIATIVE'}
           </span>
         </div>
 
         <h2 className="text-xl sm:text-2xl font-bold text-slate-100 font-mono">
-          การทอยเหรียญกำหนดฝ่ายเริ่มเดิน
+          {t('coinTossTitle')}
         </h2>
         <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-          {gameMode === 'pvp'
-            ? 'โหมดผู้เล่น 2 คน: ฝ่ายน้ำเงินเลือก 1 หน้า (หัว/ก้อย) ฝ่ายแดงจะได้รับอีกหน้าโดยอัตโนมัติ (โอกาส 50/50)'
-            : 'ฝ่ายน้ำเงินเลือก 1 หน้า (หัว/ก้อย) ฝ่ายแดง (AI) จะได้รับอีกหน้าโดยอัตโนมัติ (โอกาส 50/50)'}
+          {t('coinTossSubtitle')}
         </p>
 
         {/* Coin Stage Display */}
@@ -106,21 +106,21 @@ export const CoinTossModal: React.FC<CoinTossModalProps> = ({
               <>
                 <Shield className="w-10 h-10 text-cyan-300" />
                 <span className="font-mono font-black text-sm tracking-wider mt-1">
-                  หัว (HEADS)
+                  {t('heads')}
                 </span>
               </>
             ) : result === 'tails' ? (
               <>
                 <Swords className="w-10 h-10 text-rose-300" />
                 <span className="font-mono font-black text-sm tracking-wider mt-1">
-                  ก้อย (TAILS)
+                  {t('tails')}
                 </span>
               </>
             ) : (
               <>
                 <Coins className="w-10 h-10 text-amber-400" />
                 <span className="font-mono text-xs text-amber-300/80 mt-1">
-                  เหรียญยุทธการ
+                  {t('coinTossBtn')}
                 </span>
               </>
             )}
@@ -138,11 +138,7 @@ export const CoinTossModal: React.FC<CoinTossModalProps> = ({
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>
-                  {winner === 'white'
-                    ? 'ฝ่ายน้ำเงิน ทายถูก! ได้สิทธิ์เดินก่อน'
-                    : gameMode === 'pvp'
-                    ? 'ฝ่ายแดง ชนะการเสี่ยงทาย! ได้สิทธิ์เดินก่อน'
-                    : 'ฝ่ายแดง (AI) ได้สิทธิ์เดินก่อน!'}
+                  {winner === 'white' ? t('coinTossWinBlue') : t('coinTossWinRed')}
                 </span>
               </div>
             </div>
@@ -165,17 +161,17 @@ export const CoinTossModal: React.FC<CoinTossModalProps> = ({
               <div className="flex items-center justify-between w-full">
                 <span className="font-bold text-sm text-slate-100 flex items-center gap-1.5">
                   <Shield className="w-4 h-4 text-cyan-400" />
-                  หัว (Heads)
+                  {t('heads')}
                 </span>
                 {whiteChoice === 'heads' && (
                   <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
                 )}
               </div>
               <div className="text-[11px] font-mono text-cyan-300 mt-1">
-                ฝ่ายน้ำเงิน: เลือกหน้านี้
+                {getFactionName('white').split(' ')[0]}: {t('heads')}
               </div>
               <div className="text-[10px] font-mono text-slate-400">
-                (ฝ่ายแดง: ก้อย อัตโนมัติ)
+                ({getFactionName('black').split(' ')[0]}: {t('tails')})
               </div>
             </button>
 
@@ -192,17 +188,17 @@ export const CoinTossModal: React.FC<CoinTossModalProps> = ({
               <div className="flex items-center justify-between w-full">
                 <span className="font-bold text-sm text-slate-100 flex items-center gap-1.5">
                   <Swords className="w-4 h-4 text-rose-400" />
-                  ก้อย (Tails)
+                  {t('tails')}
                 </span>
                 {whiteChoice === 'tails' && (
                   <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
                 )}
               </div>
               <div className="text-[11px] font-mono text-cyan-300 mt-1">
-                ฝ่ายน้ำเงิน: เลือกหน้านี้
+                {getFactionName('white').split(' ')[0]}: {t('tails')}
               </div>
               <div className="text-[10px] font-mono text-slate-400">
-                (ฝ่ายแดง: หัว อัตโนมัติ)
+                ({getFactionName('black').split(' ')[0]}: {t('heads')})
               </div>
             </button>
           </div>
@@ -217,24 +213,24 @@ export const CoinTossModal: React.FC<CoinTossModalProps> = ({
               className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-mono text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4" />
-              <span>{isFlipping ? 'กำลังทอยเหรียญ...' : 'ทอยเหรียญ (Flip Coin)'}</span>
+              <span>{isFlipping ? t('coinTossFlipping') : t('coinTossFlipBtn')}</span>
             </button>
           ) : (
             <div className="flex flex-col sm:flex-row items-center gap-2">
               <button
                 onClick={handleResetFlip}
                 className="w-full sm:w-auto px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs rounded-xl border border-slate-700 transition-colors flex items-center justify-center gap-1.5"
-                title="ทอยเหรียญใหม่อีกครั้ง"
+                title={t('retryTestBtn')}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>ทอยใหม่</span>
+                <span>{t('resetBtn')}</span>
               </button>
               <button
                 onClick={handleStartBattle}
                 className="flex-1 w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold font-mono text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
               >
                 <Swords className="w-4 h-4" />
-                <span>เริ่มเปิดศึก ({winner === 'white' ? 'ฝ่ายน้ำเงินเดินก่อน' : 'ฝ่ายแดงเดินก่อน'})</span>
+                <span>{t('enterBattleBtn')}</span>
               </button>
             </div>
           )}

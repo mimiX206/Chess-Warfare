@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Faction, Piece, PieceType, Position } from '../types/chess';
-import { posToCoord, getPieceNameTH } from '../engine/warfareRules';
+import { posToCoord } from '../engine/warfareRules';
 import { PieceIcon } from './PieceIcon';
 import { X, Trash2, Wand2, Shield, Swords } from 'lucide-react';
+import { useLanguage } from '../i18n';
 
 interface PieceSummonModalProps {
   isOpen: boolean;
@@ -13,17 +14,17 @@ interface PieceSummonModalProps {
   onClose: () => void;
 }
 
-const AVAILABLE_PIECES: { type: PieceType; name: string; role: string }[] = [
-  { type: 'president', name: 'ประธานาธิบดี (President)', role: 'ผู้นำสูงสุด (King)' },
-  { type: 'first_lady', name: 'สุภาพสตรีฯ (First Lady)', role: 'คุ้มกัน / เดินอิสระ (Queen)' },
-  { type: 'bodyguard', name: 'บอดี้การ์ด (Bodyguard)', role: 'คุ้มกัน / ทแยง (Bishop)' },
-  { type: 'jet', name: 'เครื่องบินขับไล่ (Jet)', role: 'L-Shape / คูลดาวน์ 2T (Knight)' },
-  { type: 'tank', name: 'รถถัง (Tank)', role: 'แนวตั้ง/แนวนอน (Rook)' },
-  { type: 'citizen', name: 'พลเมือง (Citizen)', role: 'เดินหน้า 1 / เลื่อนขั้น (Pawn)' },
-  { type: 'brave_soldier', name: 'ทหารผู้กล้า (Brave Soldier)', role: 'เลื่อนขั้น: Queen ระยะ <= 5' },
-  { type: 'trainee_pilot', name: 'นักบินฝึกหัด (Trainee Pilot)', role: 'เลื่อนขั้น: Knight ไร้คูลดาวน์' },
-  { type: 'police', name: 'ตำรวจ (Police)', role: 'เลื่อนขั้น: พุ่งประชิดล็อก 1 ตา (ไม่โดนซ้ำ)' },
-  { type: 'armored_car', name: 'รถหุ้มเกราะ (Armored Car)', role: 'เลื่อนขั้น: Rook ระยะ <= 4' },
+const PIECE_TYPES: PieceType[] = [
+  'president',
+  'first_lady',
+  'bodyguard',
+  'jet',
+  'tank',
+  'citizen',
+  'brave_soldier',
+  'trainee_pilot',
+  'police',
+  'armored_car',
 ];
 
 export const PieceSummonModal: React.FC<PieceSummonModalProps> = ({
@@ -34,6 +35,7 @@ export const PieceSummonModal: React.FC<PieceSummonModalProps> = ({
   onRemove,
   onClose,
 }) => {
+  const { t, getPiece, getFactionName } = useLanguage();
   const [selectedFaction, setSelectedFaction] = useState<Faction>(
     currentPiece ? currentPiece.faction : 'white'
   );
@@ -53,13 +55,13 @@ export const PieceSummonModal: React.FC<PieceSummonModalProps> = ({
             </div>
             <div>
               <h3 className="font-mono font-bold text-sm sm:text-base text-slate-100 flex items-center gap-1.5">
-                <span>เสกตัวหมาก (Sandbox Summon)</span>
+                <span>{t('summonTitle')}</span>
                 <span className="text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded text-xs">
-                  พิกัด {coord}
+                  {t('summonCoord')} {coord}
                 </span>
               </h3>
               <p className="text-[11px] text-slate-400 font-sans">
-                เลือกฝ่ายและยูนิตที่ต้องการวางลงบนช่องนี้
+                {t('summonSubtitle')}
               </p>
             </div>
           </div>
@@ -82,7 +84,7 @@ export const PieceSummonModal: React.FC<PieceSummonModalProps> = ({
             }`}
           >
             <Shield className="w-3.5 h-3.5 text-cyan-400" />
-            <span>ฝ่ายน้ำเงิน (Allies)</span>
+            <span>{getFactionName('white')}</span>
           </button>
           <button
             onClick={() => setSelectedFaction('black')}
@@ -93,16 +95,16 @@ export const PieceSummonModal: React.FC<PieceSummonModalProps> = ({
             }`}
           >
             <Swords className="w-3.5 h-3.5 text-rose-400" />
-            <span>ฝ่ายแดง (Opponents)</span>
+            <span>{getFactionName('black')}</span>
           </button>
         </div>
 
         {/* Piece Selection Grid */}
         <div className="overflow-y-auto flex-1 grid grid-cols-2 gap-2 pr-1 pb-1">
-          {AVAILABLE_PIECES.map((item) => {
+          {PIECE_TYPES.map((type) => {
             const previewPiece: Piece = {
-              id: `preview_${item.type}`,
-              type: item.type,
+              id: `preview_${type}`,
+              type,
               faction: selectedFaction,
               hasMoved: false,
               cooldown: 0,
@@ -111,14 +113,16 @@ export const PieceSummonModal: React.FC<PieceSummonModalProps> = ({
 
             const isCurrent =
               currentPiece &&
-              currentPiece.type === item.type &&
+              currentPiece.type === type &&
               currentPiece.faction === selectedFaction;
+
+            const pieceInfo = getPiece(type);
 
             return (
               <button
-                key={item.type}
+                key={type}
                 onClick={() => {
-                  onSummon(pos, item.type, selectedFaction);
+                  onSummon(pos, type, selectedFaction);
                   onClose();
                 }}
                 className={`p-2.5 rounded-xl border flex items-center gap-2.5 text-left transition-all ${
@@ -132,10 +136,10 @@ export const PieceSummonModal: React.FC<PieceSummonModalProps> = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-mono text-xs font-bold text-slate-200 truncate">
-                    {getPieceNameTH(item.type).name}
+                    {pieceInfo.name}
                   </div>
                   <div className="text-[10px] text-slate-400 truncate">
-                    {item.role}
+                    {pieceInfo.role}
                   </div>
                 </div>
               </button>
@@ -154,11 +158,11 @@ export const PieceSummonModal: React.FC<PieceSummonModalProps> = ({
               className="py-2 px-3 text-xs font-mono text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 rounded-xl border border-rose-900 transition-colors flex items-center gap-1.5"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>ลบหมากช่องนี้</span>
+              <span>{t('summonDeleteBtn')}</span>
             </button>
           ) : (
             <span className="text-[11px] font-mono text-slate-500">
-              คลิกยูนิตด้านบนเพื่อวาง
+              {t('summonClickToPlace')}
             </span>
           )}
 
@@ -166,7 +170,7 @@ export const PieceSummonModal: React.FC<PieceSummonModalProps> = ({
             onClick={onClose}
             className="py-2 px-4 text-xs font-mono text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors ml-auto"
           >
-            ยกเลิก
+            {t('cancel')}
           </button>
         </div>
       </div>

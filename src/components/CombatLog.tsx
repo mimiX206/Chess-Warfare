@@ -1,12 +1,14 @@
 import React, { useRef, useEffect } from 'react';
 import { Move } from '../types/chess';
 import { ScrollText, Swords, Shield, ShieldAlert, Plane } from 'lucide-react';
+import { useLanguage } from '../i18n';
 
 interface CombatLogProps {
   moves: Move[];
 }
 
 export const CombatLog: React.FC<CombatLogProps> = ({ moves }) => {
+  const { t, getFactionName } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -19,10 +21,10 @@ export const CombatLog: React.FC<CombatLogProps> = ({ moves }) => {
       <div className="flex items-center justify-between px-3 py-2 bg-slate-900 border-b border-slate-800 text-xs font-mono text-slate-300">
         <div className="flex items-center gap-1.5 text-amber-400">
           <ScrollText className="w-3.5 h-3.5" />
-          <span>บันทึกยุทธการรบ (COMBAT LOG)</span>
+          <span>{t('tabCombatLog')}</span>
         </div>
         <span className="text-[11px] text-slate-500 font-mono">
-          {moves.length} ปฏิบัติการ
+          {moves.length} {t('movesCount')}
         </span>
       </div>
 
@@ -30,7 +32,7 @@ export const CombatLog: React.FC<CombatLogProps> = ({ moves }) => {
       <div className="p-3 overflow-y-auto max-h-56 min-h-32 font-mono text-xs space-y-1.5 bg-slate-950/90 select-text">
         {moves.length === 0 ? (
           <div className="text-slate-500 text-center py-4 italic">
-            ยังไม่มีการเคลื่อนทัพ รอรับคำสั่งเดินหมากแรก
+            {t('noneCaptured')}
           </div>
         ) : (
           moves.map((m, idx) => {
@@ -72,7 +74,7 @@ export const CombatLog: React.FC<CombatLogProps> = ({ moves }) => {
                       {m.notation}
                     </span>
                     <span className="text-[10px] text-slate-500">
-                      {isWhite ? 'ฝ่ายน้ำเงิน' : 'ฝ่ายแดง'}
+                      {getFactionName(m.piece.faction).split(' ')[0]}
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-400 truncate">

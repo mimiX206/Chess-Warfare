@@ -4,6 +4,7 @@ import { CombatLog } from './CombatLog';
 import { TextGridPanel } from './TextGridPanel';
 import { CommandConsole } from './CommandConsole';
 import { Move } from '../types/chess';
+import { useLanguage } from '../i18n';
 
 interface AdvancedModeDrawerProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export const AdvancedModeDrawer: React.FC<AdvancedModeDrawerProps> = ({
   onExecuteCommand,
   onOpenRules,
 }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'log' | 'terminal' | 'cli'>('log');
 
   if (!isOpen) return null;
@@ -34,13 +36,13 @@ export const AdvancedModeDrawer: React.FC<AdvancedModeDrawerProps> = ({
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
             <h2 className="text-sm sm:text-base font-bold text-slate-100 font-mono tracking-wider">
-              ADVANCED MODE: บันทึกและคอนโซลยุทธการ
+              {t('drawerTitle')}
             </h2>
           </div>
           <button
             onClick={onClose}
             className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            title="ปิด Advanced Mode"
+            title="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -57,7 +59,7 @@ export const AdvancedModeDrawer: React.FC<AdvancedModeDrawerProps> = ({
             }`}
           >
             <ScrollText className="w-3.5 h-3.5" />
-            <span>บันทึกการเดิน ({moves.length})</span>
+            <span>{t('tabCombatLog')} ({moves.length})</span>
           </button>
 
           <button
@@ -69,7 +71,7 @@ export const AdvancedModeDrawer: React.FC<AdvancedModeDrawerProps> = ({
             }`}
           >
             <Terminal className="w-3.5 h-3.5" />
-            <span>Text-Based Grid</span>
+            <span>{t('tabTextGrid')}</span>
           </button>
 
           <button
@@ -81,7 +83,7 @@ export const AdvancedModeDrawer: React.FC<AdvancedModeDrawerProps> = ({
             }`}
           >
             <Command className="w-3.5 h-3.5" />
-            <span>คำสั่ง CLI</span>
+            <span>{t('tabConsole')}</span>
           </button>
         </div>
 
@@ -100,7 +102,7 @@ export const AdvancedModeDrawer: React.FC<AdvancedModeDrawerProps> = ({
           )}
 
           {activeTab === 'cli' && (
-            <div className="h-full flex flex-col gap-3">
+            <div className="h-full">
               <CommandConsole
                 onExecuteCommand={onExecuteCommand}
                 onOpenRules={onOpenRules}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Faction } from '../types/chess';
 import { Board } from '../engine/warfareRules';
 import { Play, Edit3, Trash2, RotateCcw, AlertTriangle, Shield, Swords, Wand2, RefreshCw } from 'lucide-react';
+import { useLanguage } from '../i18n';
 
 interface SandboxControlsProps {
   sandboxState: 'edit' | 'play';
@@ -26,6 +27,8 @@ export const SandboxControls: React.FC<SandboxControlsProps> = ({
   onResetTestPlay,
   validationError,
 }) => {
+  const { t, getFactionName } = useLanguage();
+
   // Count presidents
   let whitePresidents = 0;
   let blackPresidents = 0;
@@ -44,8 +47,6 @@ export const SandboxControls: React.FC<SandboxControlsProps> = ({
     }
   }
 
-  const isValidForPlay = whitePresidents === 1 && blackPresidents === 1;
-
   return (
     <div className="w-full max-w-xl mx-auto bg-slate-900/90 border border-slate-700/80 rounded-2xl p-3 sm:p-4 shadow-lg flex flex-col gap-2.5 animate-in fade-in">
       {/* Top Banner */}
@@ -56,15 +57,13 @@ export const SandboxControls: React.FC<SandboxControlsProps> = ({
           </div>
           <div>
             <div className="text-xs sm:text-sm font-bold font-mono text-amber-300 flex items-center gap-2">
-              <span>SANDBOX (TEST MODE)</span>
+              <span>{t('sandboxTitle')}</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full border bg-slate-800 text-slate-300 font-mono">
-                {sandboxState === 'edit' ? 'โหมดจัดวางหมาก' : 'โหมดทดสอบรบ'}
+                {sandboxState === 'edit' ? t('sandboxEditMode') : t('sandboxPlayMode')}
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              {sandboxState === 'edit'
-                ? 'คลิกช่องใดก็ได้บนกระดานเพื่อเสกยูนิตของฝ่ายใดก็ได้ออกมา'
-                : 'ระบบใช้กติกาการรบ การคุ้มกัน และการรุกฆาตเต็มรูปแบบ'}
+              {sandboxState === 'edit' ? t('sandboxEditHint') : t('sandboxPlayHint')}
             </p>
           </div>
         </div>
@@ -74,17 +73,17 @@ export const SandboxControls: React.FC<SandboxControlsProps> = ({
           <button
             onClick={onToggleSandboxState}
             className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold font-mono text-xs rounded-xl shadow-lg transition-all"
-            title="เริ่มทำการทดสอบเดินหมากตามกฎ Warfare"
+            title={t('sandboxStartPlay')}
           >
             <Play className="w-4 h-4 fill-current" />
-            <span>เริ่มทดสอบ (Play)</span>
+            <span>{t('sandboxStartPlay')}</span>
           </button>
         ) : (
           <div className="flex items-center gap-1.5">
             <button
               onClick={onResetTestPlay}
               className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition-colors"
-              title="รีเซ็ตสถานะกระดานทดสอบกลับสู่จุดเริ่มรบ"
+              title={t('retryTestBtn')}
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -93,7 +92,7 @@ export const SandboxControls: React.FC<SandboxControlsProps> = ({
               className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-mono text-xs rounded-xl shadow-lg transition-all"
             >
               <Edit3 className="w-4 h-4" />
-              <span>กลับไปแก้ไข (Edit)</span>
+              <span>{t('sandboxBackToEdit')}</span>
             </button>
           </div>
         )}
@@ -120,7 +119,7 @@ export const SandboxControls: React.FC<SandboxControlsProps> = ({
               }`}
             >
               <Shield className="w-3 h-3" />
-              <span>น้ำเงิน: {whitePresidents}/1 King</span>
+              <span>{getFactionName('white').split(' ')[0]}: {whitePresidents}/1 King</span>
             </span>
 
             <span
@@ -131,11 +130,11 @@ export const SandboxControls: React.FC<SandboxControlsProps> = ({
               }`}
             >
               <Swords className="w-3 h-3" />
-              <span>แดง: {blackPresidents}/1 King</span>
+              <span>{getFactionName('black').split(' ')[0]}: {blackPresidents}/1 King</span>
             </span>
 
             <span className="text-[11px] text-slate-400">
-              รวม: {totalPieces} หมาก
+              {t('sandboxTotalPieces')}: {totalPieces} {t('sandboxPiecesUnit')}
             </span>
           </div>
 
@@ -145,11 +144,11 @@ export const SandboxControls: React.FC<SandboxControlsProps> = ({
             <button
               onClick={() => onChangeTurn(currentTurn === 'white' ? 'black' : 'white')}
               className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] flex items-center gap-1"
-              title="สลับฝ่ายที่จะได้เดินตาแรก"
+              title={t('sandboxFirstTurn')}
             >
-              <span>ตาแรก:</span>
+              <span>{t('sandboxFirstTurn')}:</span>
               <span className={`font-bold ${currentTurn === 'white' ? 'text-cyan-400' : 'text-rose-400'}`}>
-                {currentTurn === 'white' ? 'น้ำเงิน' : 'แดง'}
+                {getFactionName(currentTurn).split(' ')[0]}
               </span>
             </button>
 
@@ -157,20 +156,20 @@ export const SandboxControls: React.FC<SandboxControlsProps> = ({
             <button
               onClick={onClearBoard}
               className="px-2.5 py-1 rounded-lg border border-rose-900/60 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-[11px] flex items-center gap-1"
-              title="ล้างหมากทั้งหมดออกจากกระดาน"
+              title={t('sandboxClearBoard')}
             >
               <Trash2 className="w-3 h-3" />
-              <span>ล้างกระดาน</span>
+              <span>{t('sandboxClearBoard')}</span>
             </button>
 
             {/* Standard Preset */}
             <button
               onClick={onLoadStandardBoard}
               className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] flex items-center gap-1"
-              title="วางหมากตามตำแหน่งเริ่มต้นมาตรฐาน"
+              title={t('sandboxStandardPreset')}
             >
               <RefreshCw className="w-3 h-3" />
-              <span>วางมาตรฐาน</span>
+              <span>{t('sandboxStandardPreset')}</span>
             </button>
           </div>
         </div>

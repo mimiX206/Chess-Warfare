@@ -1,6 +1,22 @@
-import React from 'react';
-import { Volume2, VolumeX, RotateCcw, Bot, Users, BookOpen, SlidersHorizontal, Zap, Coins, FlaskConical } from 'lucide-react';
-import { AIDifficulty, DIFFICULTY_LABELS } from '../engine/ai';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  Bot,
+  Users,
+  BookOpen,
+  SlidersHorizontal,
+  Zap,
+  Coins,
+  FlaskConical,
+  Globe,
+  Check,
+  ChevronDown,
+} from 'lucide-react';
+import { AIDifficulty } from '../engine/ai';
+import { useLanguage } from '../i18n';
+import { Language } from '../i18n/types';
 
 interface HeaderProps {
   isMuted: boolean;
@@ -33,14 +49,31 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleAdvanced,
   movesCount,
 }) => {
+  const { lang, setLang, languages, t, getDifficulty } = useLanguage();
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close language menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
+        setLangMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const currentLangObj = languages.find((l) => l.code === lang) || languages[0];
+
   return (
-    <header className="flex items-center justify-between px-3 sm:px-6 py-2.5 border-b border-slate-800/80 bg-slate-950/95 backdrop-blur-md sticky top-0 z-40">
-      {/* Zone 1: Clean Wordmark & AI Difficulty Selector */}
+    <header className="flex items-center justify-between px-2.5 sm:px-6 py-2.5 border-b border-slate-800/80 bg-slate-950/95 backdrop-blur-md sticky top-0 z-40">
+      {/* Zone 1: Wordmark & AI Difficulty Selector */}
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]"></div>
-          <span className="text-base sm:text-lg font-bold tracking-widest text-slate-100 font-mono">
-            WARFARE CHESS
+          <span className="text-sm sm:text-lg font-bold tracking-wider text-slate-100 font-mono">
+            {t('appName')}
           </span>
         </div>
 
@@ -49,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden sm:flex items-center p-0.5 bg-slate-900 border border-slate-800 rounded-lg text-[11px] font-mono ml-1">
             {(['easy', 'normal', 'expert'] as AIDifficulty[]).map((level) => {
               const isActive = difficulty === level;
-              const meta = DIFFICULTY_LABELS[level];
+              const meta = getDifficulty(level);
               return (
                 <button
                   key={level}
@@ -66,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 >
                   {level === 'expert' && <Zap className="w-2.5 h-2.5 inline mr-1 text-rose-400" />}
-                  {meta.nameTH}
+                  {meta.name}
                 </button>
               );
             })}
@@ -74,22 +107,67 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
 
-      {/* Zone 2: Primary Controls & Advanced Mode Toggle */}
+      {/* Zone 2: Primary Controls, Language Selector & Modes */}
       <div className="flex items-center gap-1.5 sm:gap-2">
-        {/* Advanced Mode Toggle Button (ซ่อนบันทึกการเดินและคอนโซลไว้ในปุ่มนี้) */}
+        {/* Language Selector Dropdown */}
+        <div className="relative" ref={langMenuRef}>
+          <button
+            onClick={() => setLangMenuOpen((prev) => !prev)}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-slate-300 bg-slate-900/90 hover:bg-slate-800 hover:text-white rounded-lg border border-slate-800 transition-colors"
+            title={t('language')}
+          >
+            <span className="text-sm">{currentLangObj.flag}</span>
+            <span className="font-mono text-xs hidden md:inline">{currentLangObj.nativeName}</span>
+            <ChevronDown className="w-3 h-3 text-slate-400" />
+          </button>
+
+          {langMenuOpen && (
+            <div className="absolute right-0 mt-1.5 w-40 py-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95">
+              <div className="px-3 py-1 text-[10px] font-mono text-slate-400 border-b border-slate-800 flex items-center gap-1">
+                <Globe className="w-3 h-3 text-amber-400" />
+                <span>{t('language')}</span>
+              </div>
+              {languages.map((l) => {
+                const isSelected = l.code === lang;
+                return (
+                  <button
+                    key={l.code}
+                    onClick={() => {
+                      setLang(l.code);
+                      setLangMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left transition-colors ${
+                      isSelected
+                        ? 'bg-amber-500/20 text-amber-300 font-bold'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{l.flag}</span>
+                      <span>{l.nativeName}</span>
+                    </div>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Advanced Mode Toggle Button */}
         <button
           onClick={onToggleAdvanced}
-          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+          className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
             isAdvancedOpen
               ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
               : 'bg-slate-900/90 text-slate-300 border-slate-700/80 hover:bg-slate-800 hover:text-white'
           }`}
-          title="เปิด/ปิด Advanced Mode (บันทึกการเดิน, Text-Based Grid, คำสั่ง CLI)"
+          title="Advanced Mode"
         >
           <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
-          <span>Advanced Mode</span>
+          <span className="hidden lg:inline">Advanced</span>
           {movesCount > 0 && (
-            <span className="ml-0.5 px-1.5 py-0.2 bg-slate-800 text-[10px] rounded-full text-slate-300 font-mono">
+            <span className="px-1.5 py-0.2 bg-slate-800 text-[10px] rounded-full text-slate-300 font-mono">
               {movesCount}
             </span>
           )}
@@ -99,10 +177,10 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onOpenRules}
           className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-300 bg-slate-900/80 hover:bg-slate-800 hover:text-white rounded-lg border border-slate-800 transition-colors"
-          title="คู่มือกติกา Warfare"
+          title={t('rulesTitle')}
         >
           <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-          <span>กติกา</span>
+          <span>{t('rulesBtn')}</span>
         </button>
 
         {/* Mode Selector Segmented / Toggle */}
@@ -114,10 +192,10 @@ export const Header: React.FC<HeaderProps> = ({
                 ? 'bg-slate-800 text-emerald-300 font-bold shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
-            title="สู้กับบอททหาร AI"
+            title={t('vsAI')}
           >
             <Bot className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden md:inline">vs AI</span>
+            <span className="hidden md:inline">{t('vsAI')}</span>
           </button>
 
           <button
@@ -127,10 +205,10 @@ export const Header: React.FC<HeaderProps> = ({
                 ? 'bg-slate-800 text-cyan-300 font-bold shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
-            title="ผู้เล่น 2 คน (PVP)"
+            title={t('twoPlayer')}
           >
             <Users className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden md:inline">2P</span>
+            <span className="hidden md:inline">{t('twoPlayer')}</span>
           </button>
 
           <button
@@ -140,10 +218,10 @@ export const Header: React.FC<HeaderProps> = ({
                 ? 'bg-amber-950/80 text-amber-300 font-bold border border-amber-600/70 shadow-sm'
                 : 'text-slate-400 hover:text-amber-300'
             }`}
-            title="โหมดทดสอบกระดานเปล่า (Sandbox / Test Mode)"
+            title={t('sandbox')}
           >
             <FlaskConical className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden md:inline">Sandbox</span>
+            <span className="hidden md:inline">{t('sandbox')}</span>
           </button>
         </div>
 
@@ -151,7 +229,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onToggleMute}
           className="p-1.5 text-slate-400 hover:text-slate-100 bg-slate-900/80 hover:bg-slate-800 rounded-lg border border-slate-800 transition-colors"
-          title={isMuted ? 'เปิดเสียง' : 'ปิดเสียง'}
+          title={isMuted ? t('soundOn') : t('soundOff')}
           aria-label={isMuted ? 'Unmute' : 'Mute'}
         >
           {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
@@ -162,10 +240,10 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenCoinToss}
             className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-semibold text-amber-300 bg-amber-950/50 hover:bg-amber-900/70 border border-amber-700/60 rounded-lg transition-colors shadow-sm"
-            title="ทอยเหรียญกำหนดฝ่ายเริ่มเดิน (เสี่ยงทายใหม่)"
+            title={t('coinTossTitle')}
           >
             <Coins className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">ทอยเหรียญ</span>
+            <span className="hidden sm:inline">{t('coinTossBtn')}</span>
           </button>
         )}
 
@@ -173,10 +251,10 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onReset}
           className="p-1.5 sm:px-2.5 sm:py-1.5 text-xs font-semibold text-rose-200 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800/60 rounded-lg transition-colors flex items-center gap-1"
-          title="เริ่มเกมใหม่ (Reset)"
+          title={t('resetBtn')}
         >
           <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
-          <span className="hidden sm:inline">เริ่มใหม่</span>
+          <span className="hidden sm:inline">{t('resetBtn')}</span>
         </button>
       </div>
     </header>
